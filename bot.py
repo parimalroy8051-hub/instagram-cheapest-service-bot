@@ -1,70 +1,40 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext
 import os
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
 
-# ================= CONFIG =================
-BOT_TOKEN = os.environ.get("8188938308:AAEaf7geyzXdnsBVDOmlAYQdSYOXCwuoruA")
-FORCE_CHANNEL = os.environ.get("@onlyearnfreee")  # @channelusername
-OWNER_USERNAME = "@DigitalTricks_Support"  # চাইলে বদলাতে পারো
-# =========================================
+BOT_TOKEN = os.getenv("8188938308:AAEaf7geyzXdnsBVDOmlAYQdSYOXCwuoruA")
+FORCE_CHANNEL = os.getenv("@onlyearnfreee")  # like @channelusername
 
 
-def start(update: Update, context: CallbackContext):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
-    try:
-        member = context.bot.get_chat_member(FORCE_CHANNEL, user.id)
-        if member.status in ["left", "kicked"]:
-            raise Exception("Not joined")
-    except:
-        keyboard = [
-            [InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/{FORCE_CHANNEL.replace('@','')}")],
-            [InlineKeyboardButton("🔁 Check Again", callback_data="check")]
-        ]
-        update.message.reply_text(
-            "❌ আগে আমাদের channel join করতে হবে!",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        return
+    if FORCE_CHANNEL:
+        try:
+            member = await context.bot.get_chat_member(FORCE_CHANNEL, user.id)
+            if member.status in ["left", "kicked"]:
+                btn = [[InlineKeyboardButton("Join Channel", url=f"https://t.me/{FORCE_CHANNEL.replace('@','')}")]]
+                await update.message.reply_text(
+                    "❌ আগে আমাদের চ্যানেল Join করো",
+                    reply_markup=InlineKeyboardMarkup(btn)
+                )
+                return
+        except:
+            pass
 
-    keyboard = [
-        [InlineKeyboardButton("📦 Instagram Services", callback_data="services")],
-        [InlineKeyboardButton("📞 Contact Owner", url=f"https://t.me/{OWNER_USERNAME.replace('@','')}")]
-    ]
-
-    update.message.reply_text(
-        "👋 Welcome!\n\nনিচের option থেকে বেছে নাও 👇",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "✅ Bot working!\n\nWelcome 😄"
     )
 
 
-def button(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
-
-    if query.data == "check":
-        start(query, context)
-
-    elif query.data == "services":
-        query.edit_message_text(
-            "📦 *Instagram Cheapest Services*\n\n"
-            "• Followers\n"
-            "• Likes\n"
-            "• Views\n\n"
-            "Order করতে owner এর সাথে কথা বলো 👇",
-            parse_mode="Markdown"
-        )
-
-
 def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
-
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CallbackQueryHandler(button))
-
-    updater.start_polling()
-    updater.idle()
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.run_polling()
 
 
 if __name__ == "__main__":
