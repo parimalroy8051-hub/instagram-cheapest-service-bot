@@ -6,7 +6,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
-BOT_TOKEN = os.getenv("8188938308:AAEaf7geyzXdnsBVDOmlAYQdSYOXCwuoruA")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 FORCE_CHANNEL = os.getenv("@onlyearnfreee")  # like @channelusername
 
 
