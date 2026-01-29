@@ -1,83 +1,71 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext
+import os
 
-# ================== CHANGE THESE ==================
-BOT_TOKEN = "8188938308:AAEaf7geyzXdnsBVDOmlAYQdSYOXCwuoruA"
-FORCE_CHANNEL = "@onlyearnfreee"   # @ সহ
-OWNER_USERNAME = "@DigitalTricks_Support"
-# =================================================
+# ================= CONFIG =================
+BOT_TOKEN = os.environ.get("8188938308:AAEaf7geyzXdnsBVDOmlAYQdSYOXCwuoruA")
+FORCE_CHANNEL = os.environ.get("@onlyearnfreee")  # @channelusername
+OWNER_USERNAME = "@DigitalTricks_Support"  # চাইলে বদলাতে পারো
+# =========================================
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
+
+def start(update: Update, context: CallbackContext):
+    user = update.effective_user
+
     try:
-        member = await context.bot.get_chat_member(FORCE_CHANNEL, user_id)
-        if member.status not in ["member", "administrator", "creator"]:
+        member = context.bot.get_chat_member(FORCE_CHANNEL, user.id)
+        if member.status in ["left", "kicked"]:
             raise Exception("Not joined")
     except:
         keyboard = [
-            [InlineKeyboardButton("📌 Join Channel", url=f"https://t.me/{FORCE_CHANNEL.replace('@','')}")],
-            [InlineKeyboardButton("✅ Verify", callback_data="verify")]
+            [InlineKeyboardButton("✅ Join Channel", url=f"https://t.me/{FORCE_CHANNEL.replace('@','')}")],
+            [InlineKeyboardButton("🔁 Check Again", callback_data="check")]
         ]
-        await update.message.reply_text(
-            "Welcome 😊\nআগে channel join করো 👇",
+        update.message.reply_text(
+            "❌ আগে আমাদের channel join করতে হবে!",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
 
-    await main_menu(update, context)
-
-async def verify(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user_id = query.from_user.id
-
-    try:
-        member = await context.bot.get_chat_member(FORCE_CHANNEL, user_id)
-        if member.status not in ["member", "administrator", "creator"]:
-            await query.answer("❌ আগে channel join করো", show_alert=True)
-            return
-    except:
-        await query.answer("❌ আগে channel join করো", show_alert=True)
-        return
-
-    await query.message.delete()
-    await main_menu(query, context)
-
-async def main_menu(update_or_query, context):
     keyboard = [
-        [InlineKeyboardButton("📌 About Bot", callback_data="about")],
-        [InlineKeyboardButton("🆘 Help", callback_data="help")],
-        [InlineKeyboardButton("👤 Owner", callback_data="owner")]
+        [InlineKeyboardButton("📦 Instagram Services", callback_data="services")],
+        [InlineKeyboardButton("📞 Contact Owner", url=f"https://t.me/{OWNER_USERNAME.replace('@','')}")]
     ]
-    text = "✅ Verification Successful!\nএকটা option select করো 👇"
 
-    if isinstance(update_or_query, Update):
-        await update_or_query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-    else:
-        await update_or_query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+    update.message.reply_text(
+        "👋 Welcome!\n\nনিচের option থেকে বেছে নাও 👇",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
-async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+def button(update: Update, context: CallbackContext):
     query = update.callback_query
-    data = query.data
+    query.answer()
 
-    if data == "about":
-        await query.answer()
-        await query.message.reply_text("🤖 এটা একটা fully custom Telegram bot")
-    elif data == "help":
-        await query.answer()
-        await query.message.reply_text("🆘 Help লাগলে Owner এর সাথে contact করো")
-    elif data == "owner":
-        await query.answer()
-        await query.message.reply_text(f"👤 Owner: {OWNER_USERNAME}")
+    if query.data == "check":
+        start(query, context)
+
+    elif query.data == "services":
+        query.edit_message_text(
+            "📦 *Instagram Cheapest Services*\n\n"
+            "• Followers\n"
+            "• Likes\n"
+            "• Views\n\n"
+            "Order করতে owner এর সাথে কথা বলো 👇",
+            parse_mode="Markdown"
+        )
+
 
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    updater = Updater(BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(verify, pattern="verify"))
-    app.add_handler(CallbackQueryHandler(buttons))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CallbackQueryHandler(button))
 
-    print("Bot is running...")
-    app.run_polling()
+    updater.start_polling()
+    updater.idle()
+
 
 if __name__ == "__main__":
     main()
